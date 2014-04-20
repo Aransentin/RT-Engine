@@ -2,8 +2,11 @@
 
 A realtime C/OpenCL-OpenGL interop raytracer.
 
-Requires Linux (for now) and a GPU that supports cl_khr_gl_sharing.
+Requires Linux (for now), a GPU that supports cl_khr_gl_sharing, in addition to the GLFW and OpenCL libraries.
 
+#####How to compile:
 
-####Screenshot of a test mesh
+gcc --std=c11 *.c -lOpenCL -lglfw -lm -lGL
+
+#####Screenshot of a test mesh
 ![RT-Engine](http://i.imgur.com/JqHpFRv.png )
