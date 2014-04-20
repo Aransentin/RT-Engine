@@ -1,10 +1,5 @@
 #pragma once
 
-typedef struct vertex_struct Vertex;
+#include "mesh.h"
 
-struct vertex_struct
-{
-	float v[8];
-};
-
-Vertex * world_testing( unsigned int * n_vert );
+float * world_testing( unsigned int * n_vert );

@@ -153,7 +153,7 @@ void engine_cl_init_kernel( Engine_cl * ec, unsigned int gl_texture )
 	/*Create a memory buffer for the triangles*/
 	unsigned int nvert = 0;
 	world_testing( &nvert );
-	ec->tri = clCreateBuffer( ec->context, CL_MEM_READ_ONLY, sizeof(Vertex)*nvert, NULL, &err );
+	ec->tri = clCreateBuffer( ec->context, CL_MEM_READ_ONLY, sizeof(float)*8*nvert, NULL, &err );
 	error_cl( __LINE__, err );
 	
 	/*Set kernel arguments*/
@@ -185,7 +185,7 @@ void engine_cl_render( Engine_cl * e )
 	/*Upload triangle data*/
 	unsigned int nvert = 0;
 	world_testing( &nvert );
-	err = clEnqueueWriteBuffer( e->queue, e->tri, CL_FALSE, 0, sizeof(Vertex)*nvert, world_testing( NULL ), 0, NULL, NULL );
+	err = clEnqueueWriteBuffer( e->queue, e->tri, CL_FALSE, 0, sizeof(float)*8*nvert, world_testing( NULL ), 0, NULL, NULL );
 	error_cl( __LINE__, err );
 	
 	/*Acquire the OpenGL texture*/

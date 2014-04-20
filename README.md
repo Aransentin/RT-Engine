@@ -8,5 +8,5 @@ Requires Linux (for now), a GPU that supports cl_khr_gl_sharing, in addition to 
 
 gcc --std=c11 *.c -lOpenCL -lglfw -lm -lGL
 
-#####Screenshot of a test mesh
-![RT-Engine](http://i.imgur.com/JqHpFRv.png )
+#####Sample screenshot
+![RT-Engine]( http://i.imgur.com/0haa75V.png )
