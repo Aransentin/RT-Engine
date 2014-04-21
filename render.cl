@@ -47,15 +47,15 @@ float3 normal_interpolate( global float8 * tri, int t, float3 bary )
 int ray_trace( global float8 * tri, float3 ori, float3 dir, float3 * ori_out, float3 * dir_out, float3 * col_out )
 {
 	int mi = -1;
-	float4 mout = (float4)( 0.0, 0.0, 0.0, 0.0 );
+	float4 mout = (float4)( 0.0, 0.0, 0.0, 8.0*2048.0 );
 	
 	/*Test every triangle in the world - must be improved*/
-	for( int i=0; i<2946/3; i++ )
+	for( int i=0; i<3342/3; i++ )
 	{
 		float4 result;
 		if ( intersect_tri( tri[i*3+0].xyz, tri[i*3+1].xyz, tri[i*3+2].xyz, ori, dir, &result ) == 1 )
 		{
-			if( result.s3 > mout.s3 )
+			if( result.s3 < mout.s3 )
 			{
 				mi = i;
 				mout = result;
@@ -65,7 +65,7 @@ int ray_trace( global float8 * tri, float3 ori, float3 dir, float3 * ori_out, fl
 	
 	if ( mi == -1 )
 	{
-		*col_out += (float3)( 1.0, 1.0, 1.0 )*(0.2+dir.z);
+		*col_out += (float3)( 1.0, 1.0, 1.0 )*(0.2+dir.z*0.5);
 		return 0;
 	}
 	else
@@ -77,7 +77,7 @@ int ray_trace( global float8 * tri, float3 ori, float3 dir, float3 * ori_out, fl
 		*ori_out = npos;
 		*dir_out = normal;
 		
-		*col_out += (float3)( 0.2, 0.2, 0.3 );
+		*col_out += (float3)( 0.1, 0.1, 0.1 );
 		return 1;
 	}
 }
@@ -93,7 +93,7 @@ kernel void core( write_only image2d_t image, constant float4 * camera, global f
 	float3 ray_col = (float3)( 0.0, 0.0, 0.0 );
 	
 	/*Trace the ray, bounce three times at maximum*/
-	for( int i=0; i<3; i++ )
+	for( int i=0; i<4; i++ )
 	{
 		float3 ray_ori_new, ray_dir_new;
 		
