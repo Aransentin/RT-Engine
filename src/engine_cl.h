@@ -5,6 +5,8 @@ typedef struct engine_cl_struct Engine_cl;
 #include <CL/cl.h>
 #include <CL/cl_gl.h>
 
+#include "world.h"
+
 struct engine_cl_struct
 {
 	cl_platform_id platform;
@@ -23,4 +25,4 @@ struct engine_cl_struct
 
 Engine_cl * engine_cl_init( size_t dim[4] );
 void engine_cl_init_kernel( Engine_cl * ec, unsigned int gl_texture );
-void engine_cl_render( Engine_cl * e );
+void engine_cl_render( Engine_cl * e, World * w );

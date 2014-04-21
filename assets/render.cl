@@ -48,16 +48,15 @@ float2 uv_interpolate( global float8 * tri, int t, float3 bary )
 	return tri[t*3+0].s67*bary.x + tri[t*3+1].s67*bary.y + tri[t*3+2].s67*bary.z;
 }
 
-int ray_trace( global float8 * tri, float3 ori, float3 dir, float3 * ori_out, float3 * dir_out, float3 * col_out )
+int ray_trace( global float8 * tri, float3 * ori, float3 * dir, float3 * col, float str )
 {
 	int mi = -1;
 	float4 mout = (float4)( 0.0, 0.0, 0.0, 8.0*2048.0 );
 	
-	/*Test every triangle in the world - must be improved*/
-	for( int i=0; i<3270/3; i++ )
+	for( int i=0; i<1692/3; i++ )
 	{
 		float4 result;
-		if ( intersect_tri( tri[i*3+0].xyz, tri[i*3+1].xyz, tri[i*3+2].xyz, ori, dir, &result ) == 1 )
+		if ( intersect_tri( tri[i*3+0].xyz, tri[i*3+1].xyz, tri[i*3+2].xyz, *ori, *dir, &result ) == 1 )
 		{
 			if( result.s3 < mout.s3 )
 			{
@@ -67,32 +66,56 @@ int ray_trace( global float8 * tri, float3 ori, float3 dir, float3 * ori_out, fl
 		}
 	}
 	
-	if ( mi == -1 )
-	{
-		*col_out = (float3)( 1.0, 1.0, 1.0 )*(0.2+dir.z);
-		return 0;
-	}
-	else
+	if ( mi != -1 )
 	{
 		/*Calculate a new vector*/
-		float3 npos = ori + dir * mout.s3;
+		float3 npos = *ori + *dir * mout.s3*0.9999;
 		float3 normal = normal_interpolate( tri, mi, mout.xyz );
 		float2 uv = uv_interpolate( tri, mi, mout.xyz );
-		float3 ref = dir - 2.0*(dot(dir, normal))*normal;
+		float3 ref = *dir - 2.0*(dot(*dir, normal))*normal;
+		//float3 ref = normalize(dir + (0.0f)*normal);
 		
-		
-		*ori_out = npos;
-		*dir_out = ref;
-		
-		*col_out = (float3)( uv, 0.3 );
+		*col += (float3)( uv*0.5, 0.15 )*str;
+		*ori = npos;
+		*dir = ref;
 		return 1;
 	}
+	return 0;
 }
 
-kernel void core( write_only image2d_t image, constant float4 * camera, global float8 * tri )
+float sky_color( float3 vec )
+{
+	return vec.z*0.2+0.3;
+}
+
+int bb_test( float3 lb, float3 rt, float3 invdir, float3 ori, float * t )
+{
+	float t1 = (lb.x - ori.x)*invdir.x;
+	float t2 = (rt.x - ori.x)*invdir.x;
+	float t3 = (lb.y - ori.y)*invdir.y;
+	float t4 = (rt.y - ori.y)*invdir.y;
+	float t5 = (lb.z - ori.z)*invdir.z;
+	float t6 = (rt.z - ori.z)*invdir.z;
+	float tmin = max(max(min(t1, t2), min(t3, t4)), min(t5, t6));
+	float tmax = min(min(max(t1, t2), max(t3, t4)), max(t5, t6));
+	if ( tmax < 0.0f )
+	{
+		*t = tmax;
+		return 0;
+	}
+	if (tmin > tmax)
+	{
+		*t = tmax;
+		return 0;
+	}
+	*t = tmin;
+	return 1;
+}
+
+kernel void core( write_only image2d_t image, constant float4 camera[4], global float8 * tri )
 {
 	int2 cordi = (int2)( get_global_id(0), get_global_id(1) );
-	float2 cordf = (float2)( cordi.x/DIM_X, cordi.y/DIM_Y );
+	float2 cordf = (float2)( cordi.x/(DIM_X), cordi.y/(DIM_Y) );
 	
 	/*Setup the ray vector & colour*/
 	float3 ray_ori = ( camera[1] + camera[2]*cordf.x+camera[3]*cordf.y ).xyz;
@@ -100,19 +123,21 @@ kernel void core( write_only image2d_t image, constant float4 * camera, global f
 	float3 ray_col = (float3)( 0.0, 0.0, 0.0 );
 	
 	/*Trace the ray, bounce three times at maximum*/
-	for( int i=0; i<4; i++ )
+	for( int i=0; i<3; i++ )
 	{
-		float3 ray_ori_new, ray_dir_new, col_new;
-		
-		if ( ray_trace( tri, ray_ori, ray_dir, &ray_ori_new, &ray_dir_new, &col_new ) )
+		float tlen;
+		float3 invdir = 1.0f/ray_dir;
+		if ( bb_test( (float3)( -2.4f, -2.4f, -3.7f ), (float3)( 2.3f, 2.3f, 2.2f ), invdir, ray_ori, &tlen ) == 1 )
 		{
-			ray_col += col_new*( 1.0/(i+1) );
-			ray_dir = ray_dir_new;
-			ray_ori = ray_ori_new;
+			if( ray_trace( tri, &ray_ori, &ray_dir, &ray_col, 1.0/(i+1) ) != 1 )
+			{
+				ray_col += (float3)(sky_color( ray_dir ));
+				break;
+			}
 		}
 		else
 		{
-			ray_col += col_new*( 1.0/(i+1) );
+			ray_col += (float3)(sky_color( ray_dir ));
 			break;
 		}
 	}

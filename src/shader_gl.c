@@ -45,8 +45,8 @@ Shader * shader_init( void )
 	Shader * s = calloc( 1, sizeof(Shader) );
 	
 	/*Read shader source files*/
-	char * vs = readFile( "vert.glsl" );
-	char * fs = readFile( "frag.glsl" );
+	char * vs = readFile( "assets/vert.glsl" );
+	char * fs = readFile( "assets/frag.glsl" );
 	
 	/*Compile shaders*/
 	s->shader[0] = glCreateShader( GL_VERTEX_SHADER );
