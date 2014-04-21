@@ -2,7 +2,7 @@
 
 int main()
 {
-	size_t dim[4] = { 512, 512, 64, 64 };
+	size_t dim[4] = { 512, 512, 512, 512 };
 	Engine * e = engine_init( dim );
 	
 	while( 1 )

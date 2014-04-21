@@ -69,7 +69,7 @@ int ray_trace( global float8 * tri, float3 ori, float3 dir, float3 * ori_out, fl
 	
 	if ( mi == -1 )
 	{
-		*col_out = (float3)( 1.0, 1.0, 1.0 )*(0.2+dir.z*0.5);
+		*col_out = (float3)( 1.0, 1.0, 1.0 )*(0.2+dir.z);
 		return 0;
 	}
 	else
@@ -112,6 +112,7 @@ kernel void core( write_only image2d_t image, constant float4 * camera, global f
 		}
 		else
 		{
+			ray_col += col_new*( 1.0/(i+1) );
 			break;
 		}
 	}
