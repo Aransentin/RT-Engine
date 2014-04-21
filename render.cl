@@ -39,47 +39,75 @@ int intersect_tri( float3 v1, float3 v2, float3 v3, float3 ori, float3 dir, floa
 	return 0;
 }
 
+float3 normal_interpolate( global float8 * tri, int t, float3 bary )
+{
+	return tri[t*3+0].s345*bary.x + tri[t*3+1].s345*bary.y + tri[t*3+2].s345*bary.z;
+}
+
+int ray_trace( global float8 * tri, float3 ori, float3 dir, float3 * ori_out, float3 * dir_out, float3 * col_out )
+{
+	int mi = -1;
+	float4 mout = (float4)( 0.0, 0.0, 0.0, 0.0 );
+	
+	/*Test every triangle in the world - must be improved*/
+	for( int i=0; i<2946/3; i++ )
+	{
+		float4 result;
+		if ( intersect_tri( tri[i*3+0].xyz, tri[i*3+1].xyz, tri[i*3+2].xyz, ori, dir, &result ) == 1 )
+		{
+			if( result.s3 > mout.s3 )
+			{
+				mi = i;
+				mout = result;
+			}
+		}
+	}
+	
+	if ( mi == -1 )
+	{
+		*col_out += (float3)( 1.0, 1.0, 1.0 )*(0.2+dir.z);
+		return 0;
+	}
+	else
+	{
+		/*Calculate a new vector*/
+		float3 npos = ori + dir * mout.s3;
+		float3 normal = normal_interpolate( tri, mi, mout.xyz );
+		
+		*ori_out = npos;
+		*dir_out = normal;
+		
+		*col_out += (float3)( 0.2, 0.2, 0.3 );
+		return 1;
+	}
+}
+
 kernel void core( write_only image2d_t image, constant float4 * camera, global float8 * tri )
 {
 	int2 cordi = (int2)( get_global_id(0), get_global_id(1) );
 	float2 cordf = (float2)( cordi.x/DIM_X, cordi.y/DIM_Y );
 	
+	/*Setup the ray vector & colour*/
 	float3 ray_ori = ( camera[1] + camera[2]*cordf.x+camera[3]*cordf.y ).xyz;
 	float3 ray_dir = normalize( ray_ori - camera[0].xyz ); 
+	float3 ray_col = (float3)( 0.0, 0.0, 0.0 );
 	
-	int max_i = -1;
-	float4 max_out;
-	
-	for( int i=0; i<2512; i++ )
+	/*Trace the ray, bounce three times at maximum*/
+	for( int i=0; i<3; i++ )
 	{
-		float4 test;
-		int status = intersect_tri( tri[i*3+0].xyz, tri[i*3+1].xyz, tri[i*3+2].xyz, ray_ori, ray_dir, &test );
+		float3 ray_ori_new, ray_dir_new;
 		
-		if ( status == 1 && test.s3 > max_out.s3 )
+		if ( ray_trace( tri, ray_ori, ray_dir, &ray_ori_new, &ray_dir_new, &ray_col ) )
 		{
-			max_i = i;
-			max_out = test;
+			ray_dir = ray_dir_new;
+			ray_ori = ray_ori_new;
+		}
+		else
+		{
+			break;
 		}
 	}
-	if ( max_i != -1 )
-	{
-		float3 npos = ray_ori + ray_dir*max_out.s3;
-		
-		//float4 colour = (float4)( tri[max_i*3+0].s3, tri[max_i*3+0].s4, tri[max_i*3+0].s5, 255 );
-		
-		float3 normals = tri[max_i*3+0].s345*max_out.x + tri[max_i*3+1].s345*max_out.y + tri[max_i*3+2].s345*max_out.z;
-		
-		normals = normals*0.5 + 0.5;
-		
-		float4 colour = (float4)( normals, 255 );
-		write_imagef( image, cordi, colour );
-		return;
-	}
-	else
-	{
-		//float4 colour = (float4)( 0.5, 0.5, 0.7+max(ray_dir.z, 0.0), 255 );
-		float4 colour = (float4)( 0.0, 0.0, 0.0, 255 );
-		
-		write_imagef( image, cordi, colour );
-	}
+	
+	/*Write final colour to texture*/
+	write_imagef( image, cordi, (float4)(ray_col, 1.0) );
 }

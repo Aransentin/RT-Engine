@@ -70,7 +70,10 @@ Mesh * mesh_load_obj( const char * filename )
 		}
 		else if ( linebuf[0] == 'f' )
 		{
-			sscanf( linebuf+2, "%d/%d/%d %d/%d/%d %d/%d/%d", &f_ind[i_f+0], &f_ind[i_f+1], &f_ind[i_f+2], &f_ind[i_f+3], &f_ind[i_f+4], &f_ind[i_f+5], &f_ind[i_f+6], &f_ind[i_f+7], &f_ind[i_f+8] );
+			if ( n_uv == 0 )
+				sscanf( linebuf+2, "%d//%d %d//%d %d//%d", &f_ind[i_f+0], &f_ind[i_f+2], &f_ind[i_f+3], &f_ind[i_f+5], &f_ind[i_f+6], &f_ind[i_f+8] );
+			else
+				sscanf( linebuf+2, "%d/%d/%d %d/%d/%d %d/%d/%d", &f_ind[i_f+0], &f_ind[i_f+1], &f_ind[i_f+2], &f_ind[i_f+3], &f_ind[i_f+4], &f_ind[i_f+5], &f_ind[i_f+6], &f_ind[i_f+7], &f_ind[i_f+8] );
 			for( int i=0; i< 9; i++ )
 				f_ind[i_f+i] -= 1;
 			i_f+=9;
@@ -88,8 +91,16 @@ Mesh * mesh_load_obj( const char * filename )
 			m->v[t*3*8 + i*8 + 1] = v_pos[ (f_ind[t*9 +i*3 +0]*3) + 1 ];
 			m->v[t*3*8 + i*8 + 2] = v_pos[ (f_ind[t*9 +i*3 +0]*3) + 2 ];
 			
-			m->v[t*3*8 + i*8 + 6] = v_uv[ (f_ind[t*9 +i*3 +1]*2) + 0 ];
-			m->v[t*3*8 + i*8 + 7] = v_uv[ (f_ind[t*9 +i*3 +1]*2) + 1 ];
+			if ( n_uv == 0 )
+			{
+				m->v[t*3*8 + i*8 + 6] = 0.0;
+				m->v[t*3*8 + i*8 + 7] = 0.0;
+			}
+			else
+			{
+				m->v[t*3*8 + i*8 + 6] = v_uv[ (f_ind[t*9 +i*3 +1]*2) + 0 ];
+				m->v[t*3*8 + i*8 + 7] = v_uv[ (f_ind[t*9 +i*3 +1]*2) + 1 ];
+			}
 			
 			m->v[t*3*8 + i*8 + 3] = v_nor[ (f_ind[t*9 +i*3 +2]*3) + 0 ];
 			m->v[t*3*8 + i*8 + 4] = v_nor[ (f_ind[t*9 +i*3 +2]*3) + 1 ];

@@ -175,7 +175,7 @@ void engine_cl_render( Engine_cl * e )
 	cl_float cam[4*4] = 
 	{ 
 		0.1f, 5.0f, 0.0f, 0.0f,
-		-0.4f, 4.0f, -0.5f, 0.0f,
+		-0.4f, 4.2f, -0.5f, 0.0f,
 		1.0f, 0.0f, 0.0f, 0.0f,
 		0.0f, 0.0f, 1.0f, 0.0f
 	};
