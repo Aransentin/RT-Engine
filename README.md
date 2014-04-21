@@ -9,4 +9,4 @@ Requires Linux (for now), a GPU that supports cl_khr_gl_sharing, in addition to 
 gcc --std=c11 *.c -lOpenCL -lglfw -lm -lGL
 
 #####Sample screenshot
-![RT-Engine]( http://i.imgur.com/Jf5f7mW.png )
+![RT-Engine]( http://i.imgur.com/XRiRRC0.png )
