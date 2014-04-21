@@ -43,6 +43,10 @@ float3 normal_interpolate( global float8 * tri, int t, float3 bary )
 {
 	return tri[t*3+0].s345*bary.x + tri[t*3+1].s345*bary.y + tri[t*3+2].s345*bary.z;
 }
+float2 uv_interpolate( global float8 * tri, int t, float3 bary )
+{
+	return tri[t*3+0].s67*bary.x + tri[t*3+1].s67*bary.y + tri[t*3+2].s67*bary.z;
+}
 
 int ray_trace( global float8 * tri, float3 ori, float3 dir, float3 * ori_out, float3 * dir_out, float3 * col_out )
 {
@@ -50,7 +54,7 @@ int ray_trace( global float8 * tri, float3 ori, float3 dir, float3 * ori_out, fl
 	float4 mout = (float4)( 0.0, 0.0, 0.0, 8.0*2048.0 );
 	
 	/*Test every triangle in the world - must be improved*/
-	for( int i=0; i<3342/3; i++ )
+	for( int i=0; i<3270/3; i++ )
 	{
 		float4 result;
 		if ( intersect_tri( tri[i*3+0].xyz, tri[i*3+1].xyz, tri[i*3+2].xyz, ori, dir, &result ) == 1 )
@@ -65,7 +69,7 @@ int ray_trace( global float8 * tri, float3 ori, float3 dir, float3 * ori_out, fl
 	
 	if ( mi == -1 )
 	{
-		*col_out += (float3)( 1.0, 1.0, 1.0 )*(0.2+dir.z*0.5);
+		*col_out = (float3)( 1.0, 1.0, 1.0 )*(0.2+dir.z*0.5);
 		return 0;
 	}
 	else
@@ -73,11 +77,14 @@ int ray_trace( global float8 * tri, float3 ori, float3 dir, float3 * ori_out, fl
 		/*Calculate a new vector*/
 		float3 npos = ori + dir * mout.s3;
 		float3 normal = normal_interpolate( tri, mi, mout.xyz );
+		float2 uv = uv_interpolate( tri, mi, mout.xyz );
+		float3 ref = dir - 2.0*(dot(dir, normal))*normal;
+		
 		
 		*ori_out = npos;
-		*dir_out = normal;
+		*dir_out = ref;
 		
-		*col_out += (float3)( 0.1, 0.1, 0.1 );
+		*col_out = (float3)( uv, 0.3 );
 		return 1;
 	}
 }
@@ -95,10 +102,11 @@ kernel void core( write_only image2d_t image, constant float4 * camera, global f
 	/*Trace the ray, bounce three times at maximum*/
 	for( int i=0; i<4; i++ )
 	{
-		float3 ray_ori_new, ray_dir_new;
+		float3 ray_ori_new, ray_dir_new, col_new;
 		
-		if ( ray_trace( tri, ray_ori, ray_dir, &ray_ori_new, &ray_dir_new, &ray_col ) )
+		if ( ray_trace( tri, ray_ori, ray_dir, &ray_ori_new, &ray_dir_new, &col_new ) )
 		{
+			ray_col += col_new*( 1.0/(i+1) );
 			ray_dir = ray_dir_new;
 			ray_ori = ray_ori_new;
 		}

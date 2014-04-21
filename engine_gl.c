@@ -72,8 +72,8 @@ void engine_gl_init_texture( Engine_gl * e )
 	
 	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
 	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
-	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
-	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
+	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
 	
 	char * ebuf = calloc( 1, e->dim[2]*e->dim[3]*4 );
 	glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, (int)e->dim[2], (int)e->dim[3], 0, GL_RGBA, GL_UNSIGNED_BYTE, ebuf );
