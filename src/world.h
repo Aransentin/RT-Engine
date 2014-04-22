@@ -2,11 +2,13 @@
 
 #include "mesh.h"
 #include "object.h"
+#include "texture.h"
 
 typedef struct world_struct World;
 
 struct world_struct
 {
+	Texture * texture;
 	Object ** objects;
 	unsigned int n_obj;
 	char dirty;

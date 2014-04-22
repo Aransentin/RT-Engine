@@ -2,6 +2,7 @@
 #include "error_cl.h"
 #include "file.h"
 #include "rtmath.h"
+#include "texture.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -142,6 +143,8 @@ void engine_cl_init_kernel( Engine_cl * ec, unsigned int gl_texture )
 {
 	cl_int err = 0;
 	
+	/*Create buffer for the global texture*/
+	
 	/*Create image from OpenGL texture*/
 	ec->tex = clCreateFromGLTexture2D( ec->context, CL_MEM_WRITE_ONLY, GL_TEXTURE_2D, 0, gl_texture, &err );
 	error_cl( __LINE__, err );
@@ -174,6 +177,18 @@ void engine_cl_render( Engine_cl * e, World * w )
 	
 	err = clEnqueueWriteBuffer( e->queue, e->cam, CL_FALSE, 0, sizeof(cl_float)*4*4, cam, 0, NULL, NULL );
 	error_cl( __LINE__, err );
+	
+	/*Upload texture data, if neccesary*/
+	if ( w->texture == NULL )
+	{
+		w->texture = texture_load_placeholder();
+		cl_image_format format = { .image_channel_order=CL_RGBA, .image_channel_data_type=CL_UNORM_INT8 };
+		e->diffuse = clCreateImage2D( e->context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, &format, w->texture->dim[0], w->texture->dim[1], 0, w->texture->data, &err );
+		error_cl( __LINE__, err );
+		
+		err = clSetKernelArg( e->kernel, 3, sizeof( cl_mem ), &e->diffuse );
+		error_cl( __LINE__, err );
+	}
 	
 	/*Upload triangle data, if neccesary*/
 	if ( w->dirty )

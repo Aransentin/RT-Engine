@@ -20,6 +20,8 @@ struct engine_cl_struct
 	cl_mem cam;
 	cl_mem tri;
 	
+	cl_mem diffuse;
+	
 	unsigned long dim[4];
 };
 

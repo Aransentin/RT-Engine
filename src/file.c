@@ -16,6 +16,11 @@ char * readFile( const char * name )
 		fclose( f );
 		if ( r != 0 )
 			return buffer;
+		else
+		{
+			free( buffer );
+			return NULL;
+		}
 	}
 	return NULL;
 }

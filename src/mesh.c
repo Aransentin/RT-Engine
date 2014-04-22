@@ -99,7 +99,7 @@ Mesh * mesh_load_obj( const char * filename )
 			else
 			{
 				m->v[t*3*8 + i*8 + 6] = v_uv[ (f_ind[t*9 +i*3 +1]*2) + 0 ];
-				m->v[t*3*8 + i*8 + 7] = v_uv[ (f_ind[t*9 +i*3 +1]*2) + 1 ];
+				m->v[t*3*8 + i*8 + 7] = 1.0f-v_uv[ (f_ind[t*9 +i*3 +1]*2) + 1 ];
 			}
 			
 			m->v[t*3*8 + i*8 + 3] = v_nor[ (f_ind[t*9 +i*3 +2]*3) + 0 ];

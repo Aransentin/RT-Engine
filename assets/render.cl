@@ -1,3 +1,6 @@
+constant sampler_t sampler = CLK_NORMALIZED_COORDS_TRUE | CLK_ADDRESS_REPEAT | CLK_FILTER_NEAREST;
+//CLK_ADDRESS_NONE
+
 #define EPSILON 0.00001f
 int intersect_tri( float3 v1, float3 v2, float3 v3, float3 ori, float3 dir, float4 * out )
 {
@@ -48,7 +51,7 @@ float2 uv_interpolate( global float8 * tri, int t, float3 bary )
 	return tri[t*3+0].s67*bary.x + tri[t*3+1].s67*bary.y + tri[t*3+2].s67*bary.z;
 }
 
-int ray_trace( global float8 * tri, float3 * ori, float3 * dir, float3 * col, float str )
+int ray_trace( global float8 * tri, float3 * ori, float3 * dir, float3 * col, float * str, read_only image2d_t dTex )
 {
 	int mi = -1;
 	float4 mout = (float4)( 0.0, 0.0, 0.0, 8.0*2048.0 );
@@ -75,7 +78,11 @@ int ray_trace( global float8 * tri, float3 * ori, float3 * dir, float3 * col, fl
 		float3 ref = *dir - 2.0*(dot(*dir, normal))*normal;
 		//float3 ref = normalize(dir + (0.0f)*normal);
 		
-		*col += (float3)( uv*0.5, 0.15 )*str;
+		/*Diffuse texture*/
+		float4 diffuse = read_imagef( dTex, sampler, uv );
+		
+		*col += (float3)( diffuse.xyz )*(*str)*0.5;
+		*str = (*str)*0.5;
 		*ori = npos;
 		*dir = ref;
 		return 1;
@@ -85,7 +92,7 @@ int ray_trace( global float8 * tri, float3 * ori, float3 * dir, float3 * col, fl
 
 float sky_color( float3 vec )
 {
-	return vec.z*0.2+0.3;
+	return vec.z*0.5+0.5;
 }
 
 int bb_test( float3 lb, float3 rt, float3 invdir, float3 ori, float * t )
@@ -112,7 +119,7 @@ int bb_test( float3 lb, float3 rt, float3 invdir, float3 ori, float * t )
 	return 1;
 }
 
-kernel void core( write_only image2d_t image, constant float4 camera[4], global float8 * tri )
+kernel void core( write_only image2d_t image, constant float4 camera[4], global float8 * tri, read_only image2d_t diffuse_t )
 {
 	int2 cordi = (int2)( get_global_id(0), get_global_id(1) );
 	float2 cordf = (float2)( cordi.x/(DIM_X), cordi.y/(DIM_Y) );
@@ -121,23 +128,24 @@ kernel void core( write_only image2d_t image, constant float4 camera[4], global 
 	float3 ray_ori = ( camera[1] + camera[2]*cordf.x+camera[3]*cordf.y ).xyz;
 	float3 ray_dir = normalize( ray_ori - camera[0].xyz ); 
 	float3 ray_col = (float3)( 0.0, 0.0, 0.0 );
+	float str = 1.0f;
 	
 	/*Trace the ray, bounce three times at maximum*/
 	for( int i=0; i<3; i++ )
 	{
 		float tlen;
 		float3 invdir = 1.0f/ray_dir;
-		if ( bb_test( (float3)( -2.4f, -2.4f, -3.7f ), (float3)( 2.3f, 2.3f, 2.2f ), invdir, ray_ori, &tlen ) == 1 )
+		if ( bb_test( (float3)( -5.4f, -5.4f, -3.7f ), (float3)( 5.3f, 5.3f, 3.2f ), invdir, ray_ori, &tlen ) == 1 )
 		{
-			if( ray_trace( tri, &ray_ori, &ray_dir, &ray_col, 1.0/(i+1) ) != 1 )
+			if( ray_trace( tri, &ray_ori, &ray_dir, &ray_col, &str, diffuse_t ) != 1 )
 			{
-				ray_col += (float3)(sky_color( ray_dir ));
+				ray_col += (float3)(sky_color( ray_dir ))*str;
 				break;
 			}
 		}
 		else
 		{
-			ray_col += (float3)(sky_color( ray_dir ));
+			ray_col += (float3)(sky_color( ray_dir ))*str;
 			break;
 		}
 	}
