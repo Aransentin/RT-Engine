@@ -8,6 +8,7 @@ typedef struct world_struct World;
 
 struct world_struct
 {
+	char * texbuf_mem;
 	Texture * texture;
 	Object ** objects;
 	unsigned int n_obj;

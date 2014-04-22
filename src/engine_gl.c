@@ -96,7 +96,7 @@ void engine_gl_error_test( void )
 		printf( "OpenGL error: %i\n", error );
 }
 
-void engine_gl_render( Engine_gl * e )
+void engine_gl_render( Engine_gl * e, World * w )
 {
 	engine_gl_error_test();
 	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
@@ -104,6 +104,10 @@ void engine_gl_render( Engine_gl * e )
 	/*Bind texture that OpenCL rendered into*/
 	glActiveTexture( GL_TEXTURE0 );
 	glBindTexture( GL_TEXTURE_2D, e->TEX );
+	
+	/*Upload texture data, if neccesary*/
+	if ( w->texbuf_mem )
+		glTexSubImage2D( GL_TEXTURE_2D, 0, 0, 0, (GLsizei)e->dim[2], (GLsizei)e->dim[3], GL_RGBA, GL_UNSIGNED_BYTE, w->texbuf_mem );
 	
 	/*Bind window vertices*/
 	glBindVertexArray( e->VAO );

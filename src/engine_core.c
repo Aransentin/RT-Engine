@@ -19,5 +19,5 @@ Engine * engine_init( size_t dim[4] )
 void engine_render( Engine * e )
 {
 	engine_cl_render( e->cl, e->world );
-	engine_gl_render( e->gl );
+	engine_gl_render( e->gl, e->world );
 }

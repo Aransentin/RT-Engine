@@ -23,6 +23,8 @@ struct engine_cl_struct
 	cl_mem diffuse;
 	
 	unsigned long dim[4];
+	char gl_sharing_support;
+	char padding[7];
 };
 
 Engine_cl * engine_cl_init( size_t dim[4] );

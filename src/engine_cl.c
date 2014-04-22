@@ -4,6 +4,8 @@
 #include "rtmath.h"
 #include "texture.h"
 
+#include "engine_gl.h"
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -92,10 +94,10 @@ Engine_cl * engine_cl_init( size_t dim[4] )
 	error_cl( __LINE__, err );
 	
 	if ( !strstr( extensions, "cl_khr_gl_sharing") )
-	{
-		printf( "Error: OpenCL \"cl_khr_gl_sharing\" support not found!\n" );
-		exit( 1 );
-	}
+		printf( "Warning: OpenCL \"cl_khr_gl_sharing\" support not found - falling back to manual texture transfer, which is quite slow.\n" );
+	else
+		ec->gl_sharing_support = 1;
+	
 	free( extensions );
 	
 	/*OpenCL context properties*/
@@ -143,11 +145,18 @@ void engine_cl_init_kernel( Engine_cl * ec, unsigned int gl_texture )
 {
 	cl_int err = 0;
 	
-	/*Create buffer for the global texture*/
-	
 	/*Create image from OpenGL texture*/
-	ec->tex = clCreateFromGLTexture2D( ec->context, CL_MEM_WRITE_ONLY, GL_TEXTURE_2D, 0, gl_texture, &err );
-	error_cl( __LINE__, err );
+	if ( ec->gl_sharing_support == 1 )
+	{
+		ec->tex = clCreateFromGLTexture2D( ec->context, CL_MEM_WRITE_ONLY, GL_TEXTURE_2D, 0, gl_texture, &err );
+		error_cl( __LINE__, err );
+	}
+	else
+	{
+		cl_image_format format = { .image_channel_order=CL_RGBA, .image_channel_data_type=CL_UNORM_INT8 };
+		ec->tex = clCreateImage2D( ec->context, CL_MEM_WRITE_ONLY, &format, ec->dim[0], ec->dim[1], 0, NULL, &err );
+		error_cl( __LINE__, err );
+	}
 	
 	/*Create a memory buffer for the camera*/
 	ec->cam = clCreateBuffer( ec->context, CL_MEM_READ_ONLY, sizeof(cl_float)*4*4, NULL, &err );
@@ -214,17 +223,33 @@ void engine_cl_render( Engine_cl * e, World * w )
 		w->dirty = 0;
 	}
 	
-	/*Acquire the OpenGL texture*/
-	err = clEnqueueAcquireGLObjects( e->queue, 1, &e->tex, 0, NULL, NULL );
-	error_cl( __LINE__, err );
+	/*Acquire the OpenGL texture, if  supported*/
+	if ( e->gl_sharing_support == 1 )
+	{
+		err = clEnqueueAcquireGLObjects( e->queue, 1, &e->tex, 0, NULL, NULL );
+		error_cl( __LINE__, err );
+	}
 	
 	/*Dispatch work to the kernel*/
 	err = clEnqueueNDRangeKernel( e->queue, e->kernel, 2, NULL, &(e->dim[2]), NULL, 0, NULL, NULL );
 	error_cl( __LINE__, err );
 	
-	/*Release the OpenGL texture*/
-	err = clEnqueueReleaseGLObjects( e->queue, 1, &e->tex, 0, NULL, NULL );
-	error_cl( __LINE__, err );
+	/*Release the OpenGL texture, if supported*/
+	if ( e->gl_sharing_support == 1 )
+	{
+		err = clEnqueueReleaseGLObjects( e->queue, 1, &e->tex, 0, NULL, NULL );
+		error_cl( __LINE__, err );
+	}
+	else
+	{
+		/*Do a texture transfer to OpenGL*/
+		size_t origin[3] = { 0, 0, 0 };
+		w->texbuf_mem = realloc( w->texbuf_mem , e->dim[2]*e->dim[3]*4 );
+		size_t depth[3] = { e->dim[2], e->dim[3], 1 };
+		err = clEnqueueReadImage( e->queue, e->tex, CL_TRUE, origin, depth, 0, 0, w->texbuf_mem, 0, NULL, NULL );
+		error_cl( __LINE__, err );
+		
+	}
 	
 	/*Finish tasks*/
 	clFinish( e->queue );

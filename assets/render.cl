@@ -19,7 +19,7 @@ int intersect_tri( float3 v1, float3 v2, float3 v3, float3 ori, float3 dir, floa
 	det = dot( e1, P );
 	
 	if ( det >-EPSILON && det < EPSILON )
-		return -1.0;
+		return -1.0f;
 	
 	inv_det = 1.0f/det;
 	
@@ -31,12 +31,12 @@ int intersect_tri( float3 v1, float3 v2, float3 v3, float3 ori, float3 dir, floa
 	
 	Q = cross( T, e1 );
 	v = dot( dir, Q ) * inv_det;
-	if( v < 0.0f || u + v  > 1.0f ) return -1.0;
+	if( v < 0.0f || u + v  > 1.0f ) return -1.0f;
 	
 	t = dot( e2, Q ) * inv_det;
 	if( t > EPSILON )
 	{
-		(*out).s0123 = (float4)( 1.0-u-v, u, v, t );
+		(*out).s0123 = (float4)( 1.0f-u-v, u, v, t );
 		return 1;
 	}
 	return 0;
@@ -54,7 +54,7 @@ float2 uv_interpolate( global float8 * tri, int t, float3 bary )
 int ray_trace( global float8 * tri, float3 * ori, float3 * dir, float3 * col, float * str, read_only image2d_t dTex )
 {
 	int mi = -1;
-	float4 mout = (float4)( 0.0, 0.0, 0.0, 8.0*2048.0 );
+	float4 mout = (float4)( 0.0f, 0.0f, 0.0f, 8.0f*2048.0f );
 	
 	for( int i=0; i<1692/3; i++ )
 	{
@@ -72,17 +72,17 @@ int ray_trace( global float8 * tri, float3 * ori, float3 * dir, float3 * col, fl
 	if ( mi != -1 )
 	{
 		/*Calculate a new vector*/
-		float3 npos = *ori + *dir * mout.s3*0.9999;
+		float3 npos = *ori + *dir * mout.s3*0.9999f;
 		float3 normal = normal_interpolate( tri, mi, mout.xyz );
 		float2 uv = uv_interpolate( tri, mi, mout.xyz );
-		float3 ref = *dir - 2.0*(dot(*dir, normal))*normal;
+		float3 ref = *dir - 2.0f*(dot(*dir, normal))*normal;
 		//float3 ref = normalize(dir + (0.0f)*normal);
 		
 		/*Diffuse texture*/
 		float4 diffuse = read_imagef( dTex, sampler, uv );
 		
-		*col += (float3)( diffuse.xyz )*(*str)*0.5;
-		*str = (*str)*0.5;
+		*col += (float3)( diffuse.xyz )*(*str)*0.5f;
+		*str = (*str)*0.5f;
 		*ori = npos;
 		*dir = ref;
 		return 1;
@@ -92,7 +92,7 @@ int ray_trace( global float8 * tri, float3 * ori, float3 * dir, float3 * col, fl
 
 float sky_color( float3 vec )
 {
-	return vec.z*0.5+0.5;
+	return vec.z*0.5f+0.5f;
 }
 
 int bb_test( float3 lb, float3 rt, float3 invdir, float3 ori, float * t )
@@ -119,7 +119,7 @@ int bb_test( float3 lb, float3 rt, float3 invdir, float3 ori, float * t )
 	return 1;
 }
 
-kernel void core( write_only image2d_t image, constant float4 camera[4], global float8 * tri, read_only image2d_t diffuse_t )
+kernel void core( write_only image2d_t image, constant float4 * camera, global float8 * tri, read_only image2d_t diffuse_t )
 {
 	int2 cordi = (int2)( get_global_id(0), get_global_id(1) );
 	float2 cordf = (float2)( cordi.x/(DIM_X), cordi.y/(DIM_Y) );
@@ -127,7 +127,7 @@ kernel void core( write_only image2d_t image, constant float4 camera[4], global 
 	/*Setup the ray vector & colour*/
 	float3 ray_ori = ( camera[1] + camera[2]*cordf.x+camera[3]*cordf.y ).xyz;
 	float3 ray_dir = normalize( ray_ori - camera[0].xyz ); 
-	float3 ray_col = (float3)( 0.0, 0.0, 0.0 );
+	float3 ray_col = (float3)( 0.0f, 0.0f, 0.0f );
 	float str = 1.0f;
 	
 	/*Trace the ray, bounce three times at maximum*/
@@ -151,5 +151,5 @@ kernel void core( write_only image2d_t image, constant float4 camera[4], global 
 	}
 	
 	/*Write final colour to texture*/
-	write_imagef( image, cordi, (float4)(ray_col, 1.0) );
+	write_imagef( image, cordi, (float4)(ray_col, 1.0f) );
 }
