@@ -1,2 +1,2 @@
 all:
-	gcc --std=c11 src/*.c -lOpenCL -lglfw -lm -lGL
+	gcc --std=gnu11 src/*.c -lOpenCL -lglfw -lm -lGL
