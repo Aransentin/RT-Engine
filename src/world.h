@@ -19,3 +19,4 @@ struct world_struct
 World * world_new( void );
 void world_addObject( World * w, Object * o );
 float * world_vertex_serialize( World * w, unsigned int * nv_out );
+ObjectGPU * world_object_serialize( World * w );

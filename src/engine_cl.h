@@ -19,6 +19,7 @@ struct engine_cl_struct
 	cl_mem tex;
 	cl_mem cam;
 	cl_mem tri;
+	cl_mem obj;
 	
 	cl_mem diffuse;
 	

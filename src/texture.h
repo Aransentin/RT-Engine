@@ -8,4 +8,4 @@ struct texture_struct
 	unsigned int dim[2];
 };
 
-Texture * texture_load_placeholder( void );
+Texture * texture_load_all( void );

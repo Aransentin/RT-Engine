@@ -6,6 +6,7 @@
 World * world_new( void )
 {
 	World * w = calloc( 1, sizeof(World) );
+	w->texture = texture_load_all();
 	return w;
 }
 
@@ -47,8 +48,28 @@ float * world_vertex_serialize( World * w, unsigned int * nv_out )
 			memcpy( &vertices[vp*8], o->mesh->v, (o->mesh->nv)*8*sizeof(float) );
 			vp += o->mesh->nv;
 		}
-	
 	}
 	
+	
 	return vertices;
+}
+
+ObjectGPU * world_object_serialize( World * w )
+{
+	static ObjectGPU * objects = NULL;
+	
+	objects = realloc( objects, w->n_obj*sizeof(ObjectGPU) );
+	
+	for( unsigned int i=0; i<w->n_obj; i++)
+	{
+		memcpy( objects[i].bba.s, w->objects[i]->mesh->bb[0], sizeof( cl_float )*3 );
+		memcpy( objects[i].bbb.s, w->objects[i]->mesh->bb[1], sizeof( cl_float )*3 );
+		
+		objects[i].bba.s[0] -= 0.0f;
+		objects[i].bbb.s[0] += 0.0f;
+		
+		objects[i].nTri = w->objects[i]->mesh->nv/3;
+		objects[i].offset = (cl_int)w->objects[i]->buffer_offset;
+	}
+	return objects;
 }

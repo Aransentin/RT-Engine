@@ -108,8 +108,12 @@ Mesh * mesh_load_obj( const char * filename )
 		}
 	}
 	
+	/*Set large default values in the other direction*/
+	m->bb[0][0] = 1024.0f; m->bb[0][1] = 1024.0f; m->bb[0][2] = 1024.0f;
+	m->bb[1][0] = -1024.0f; m->bb[1][1] = -1024.0f; m->bb[1][2] = -1024.0f;
+	
 	/*Generate bounding box*/
-	for( unsigned int i=0; i<n_pos; i+=3 )
+	for( unsigned int i=0; i<i_pos; i+=3 )
 	{
 		if ( v_pos[i+0] < m->bb[0][0] ) m->bb[0][0] = v_pos[i+0];
 		if ( v_pos[i+1] < m->bb[0][1] ) m->bb[0][1] = v_pos[i+1];

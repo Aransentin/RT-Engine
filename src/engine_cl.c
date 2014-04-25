@@ -176,10 +176,12 @@ void engine_cl_render( Engine_cl * e, World * w )
 	
 	#include <GLFW/glfw3.h>
 	
+	float time = (float)glfwGetTime();
+	
 	/*Set camera values*/
 	cl_float cam[4*4] = {0};
-	float pos[3] = { 6.0f*cosf((float)glfwGetTime()), 6.0f*sinf((float)glfwGetTime()), 2.0f };
-	float dir[3] = { cosf((float)glfwGetTime() + 3.14159f ), sinf((float)glfwGetTime()+ 3.14159f ), -0.4f };
+	float pos[3] = { 12.0f*cosf(time), 12.0f*sinf(time), 5.0f };
+	float dir[3] = { cosf(time + 3.14159f ), sinf(time + 3.14159f ), -0.6f };
 	float nor[3] = { 0.0, 0.0, 1.0 };
 	
 	rtmath_lookTo( cam, pos, dir, nor, 0.7f, (float)e->dim[0]/(float)e->dim[1] );
@@ -188,27 +190,28 @@ void engine_cl_render( Engine_cl * e, World * w )
 	error_cl( __LINE__, err );
 	
 	/*Upload texture data, if neccesary*/
-	if ( w->texture == NULL )
+	if ( e->diffuse == NULL )
 	{
-		w->texture = texture_load_placeholder();
 		cl_image_format format = { .image_channel_order=CL_RGBA, .image_channel_data_type=CL_UNORM_INT8 };
 		e->diffuse = clCreateImage2D( e->context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, &format, w->texture->dim[0], w->texture->dim[1], 0, w->texture->data, &err );
 		error_cl( __LINE__, err );
 		
-		err = clSetKernelArg( e->kernel, 3, sizeof( cl_mem ), &e->diffuse );
+		err = clSetKernelArg( e->kernel, 5, sizeof( cl_mem ), &e->diffuse );
 		error_cl( __LINE__, err );
 	}
 	
-	/*Upload triangle data, if neccesary*/
+	/*Upload triangle/object data, if neccesary*/
 	if ( w->dirty )
 	{
 		unsigned int nvert = 0;
 		float * buffer = world_vertex_serialize( w, &nvert );
 		
-		/*Destroy the old buffer, if it exists*/
+		/*Destroy the old buffers, if they exist*/
 		if ( e->tri != NULL )
 		{
 			err = clReleaseMemObject( e->tri );
+			error_cl( __LINE__, err );
+			err = clReleaseMemObject( e->obj );
 			error_cl( __LINE__, err );
 		}
 		
@@ -216,10 +219,22 @@ void engine_cl_render( Engine_cl * e, World * w )
 		e->tri = clCreateBuffer( e->context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, sizeof(float)*8*nvert, buffer, &err );
 		error_cl( __LINE__, err );
 		
+		/*Create a new memory buffer for the objects*/
+		e->obj = clCreateBuffer( e->context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, sizeof(ObjectGPU)*(w->n_obj), world_object_serialize( w ), &err );
+		error_cl( __LINE__, err );
+		
 		/*Set the kernel argument*/
-		err = clSetKernelArg( e->kernel, 2, sizeof( cl_mem ), &e->tri );
+		err = clSetKernelArg( e->kernel, 4, sizeof( cl_mem ), &e->tri );
 		error_cl( __LINE__, err );
 
+		/*Specify number of objects to render*/
+		err = clSetKernelArg( e->kernel, 2, sizeof( cl_int ), &w->n_obj );
+		error_cl( __LINE__, err );
+	
+		/*Upload object data*/
+		err = clSetKernelArg( e->kernel, 3, sizeof( cl_mem ), &e->obj );
+		error_cl( __LINE__, err );
+		
 		w->dirty = 0;
 	}
 	
