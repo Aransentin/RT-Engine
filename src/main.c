@@ -1,31 +1,42 @@
-#include "engine_core.h"
+#include "engine.h"
+#include "world.h"
+#include "mesh.h"
+#include "rt_math.h"
 
 int main()
 {
-	/*Start engine.*/
-	size_t dim[4] = { 512, 512, 512, 512 };
-	Engine * e = engine_init( dim );
-	
-	/*Create world, bind to engine.*/
+	Engine * e = engine_new( 512, 512, 512/4, 512/4 );
 	World * w = world_new();
 	e->world = w;
 	
-	/*Make meshes and place them in the world*/
-	Object * o1 = object_new();
-	Object * o2 = object_new();
-	Object * o3 = object_new();
+	Mesh * m1 = mesh_load_obj( "assets/testarossa.obj" );
+	Mesh * m2 = mesh_load_obj( "assets/ferarri.obj" );
+	Mesh * m3 = mesh_load_obj( "assets/popo.obj" );
+	Mesh * m4 = mesh_load_obj( "assets/plane.obj" );
 	
-	Mesh * m1 = mesh_load_obj( "assets/ferarri.obj" );
-	Mesh * m2 = mesh_load_obj( "assets/testarossa.obj" );
-	Mesh * m3 = mesh_load_obj( "assets/plane.obj" );
+	Object * po = object_new( w );
+	object_attach_mesh( w, po, m4 );
 	
-	o1->mesh = m1;
-	o2->mesh = m2;
-	o3->mesh = m3;
-	
-	world_addObject( w, o1 );
-	world_addObject( w, o2 );
-	world_addObject( w, o3 );
+	for( int i=0; i<3; i++ )
+	{
+		Object * o = object_new( w );
+		mat4_translate( o->mat, 0.0f, i*4.0f - 4.0f, 0.0f );
+
+		if ( i == 0 )
+		{
+			mat4_rotate_Z( o->mat, o->mat, 0.3f );
+			object_attach_mesh( w, o, m1 );
+		}
+		else if ( i == 1 )
+		{
+			object_attach_mesh( w, o, m3 );
+		}
+		else
+		{
+			mat4_rotate_Z( o->mat, o->mat, -0.3f );
+			object_attach_mesh( w, o, m2 );
+		}
+	}
 	
 	while( 1 )
 		engine_render( e );

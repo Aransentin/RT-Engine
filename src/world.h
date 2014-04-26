@@ -1,22 +1,25 @@
 #pragma once
 
-#include "mesh.h"
-#include "object.h"
-#include "texture.h"
-
 typedef struct world_struct World;
+
+#include "object.h"
+#include "mesh.h"
 
 struct world_struct
 {
-	char * texbuf_mem;
-	Texture * texture;
 	Object ** objects;
-	unsigned int n_obj;
+	unsigned int obj_n;
 	char dirty;
-	char padding[3];
 };
 
 World * world_new( void );
-void world_addObject( World * w, Object * o );
-float * world_vertex_serialize( World * w, unsigned int * nv_out );
-ObjectGPU * world_object_serialize( World * w );
+float * world_serialize_bb( World * w );
+float * world_serialize_vert( World * w );
+int * world_serialize_obj( World * w );
+unsigned int world_geo_n( World * w );
+unsigned int world_vert_n( World * w );
+void world_recalculate_dirty( World * w );
+
+Object * object_new( World * w );
+void object_attach_mesh( World * w, Object * o, Mesh * m );
+void object_vert_transform( Object * o );

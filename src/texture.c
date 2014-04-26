@@ -1,19 +1,16 @@
 #include "texture.h"
+#include "png.h"
 
 #include <stdlib.h>
-#include <string.h>
-
-#include "png.h"
 
 static void texture_png_version_info( void )
 {
-    printf( "Compiled with libpng %s; using libpng %s.\n", PNG_LIBPNG_VER_STRING, png_libpng_ver );
+	printf( "Compiled with libpng %s; using libpng %s.\n", PNG_LIBPNG_VER_STRING, png_libpng_ver );
 }
 
-Texture * texture_load_all( void )
+void texture_load( unsigned char ** data, unsigned long dim[2] )
 {
 	texture_png_version_info();
-	Texture * t = calloc( 1, sizeof(Texture) );
 	
 	FILE *fp = fopen( "assets/texture.png", "rb" );
 	if ( !fp )
@@ -42,8 +39,8 @@ Texture * texture_load_all( void )
 
 	png_read_info( png_ptr, info_ptr );
 	
-	t->dim[0] = png_get_image_width( png_ptr, info_ptr );
-	t->dim[1] = png_get_image_height( png_ptr, info_ptr );
+	dim[0] = png_get_image_width( png_ptr, info_ptr );
+	dim[1] = png_get_image_height( png_ptr, info_ptr );
 	int color_type = png_get_color_type( png_ptr, info_ptr );
 	png_read_update_info( png_ptr, info_ptr );
 
@@ -53,41 +50,39 @@ Texture * texture_load_all( void )
 		exit( 1 );
 	}
 	png_bytep * row_pointers;
-	row_pointers = (png_bytep*) malloc( sizeof(png_bytep) * t->dim[1] );
+	row_pointers = (png_bytep*) malloc( sizeof(png_bytep) * dim[1] );
 	
-	for ( unsigned int y=0; y<t->dim[1]; y++ )
+	for ( unsigned int y=0; y<dim[1]; y++ )
 		row_pointers[y] = (png_byte*) malloc(png_get_rowbytes(png_ptr,info_ptr));
 
         png_read_image( png_ptr, row_pointers );
 	
         fclose( fp );
 	
-	t->data = malloc( t->dim[0]*t->dim[1]*4 );
+	*data = malloc( dim[0]*dim[1]*4 );
 	
-	for ( unsigned int y=0; y<t->dim[1]; y++ )
+	for ( unsigned int y=0; y<dim[1]; y++ )
 	{
-		for ( unsigned int x=0; x<t->dim[0]; x++ )
+		for ( unsigned int x=0; x<dim[0]; x++ )
 		{
 			if (color_type == PNG_COLOR_TYPE_RGB )
 			{
-				t->data[ 4*(y*t->dim[0]+x)+0 ] = row_pointers[y][x*3+0];
-				t->data[ 4*(y*t->dim[0]+x)+1 ] = row_pointers[y][x*3+1];
-				t->data[ 4*(y*t->dim[0]+x)+2 ] = row_pointers[y][x*3+2];
-				t->data[ 4*(y*t->dim[0]+x)+3 ] = 255;
+				(*data)[ 4*(y*dim[0]+x)+0 ] = row_pointers[y][x*3+0];
+				(*data)[ 4*(y*dim[0]+x)+1 ] = row_pointers[y][x*3+1];
+				(*data)[ 4*(y*dim[0]+x)+2 ] = row_pointers[y][x*3+2];
+				(*data)[ 4*(y*dim[0]+x)+3 ] = 255;
 			}
 			else
 			{
-				t->data[ 4*(y*t->dim[0]+x)+0 ] = row_pointers[y][x*4+0];
-				t->data[ 4*(y*t->dim[0]+x)+1 ] = row_pointers[y][x*4+1];
-				t->data[ 4*(y*t->dim[0]+x)+2 ] = row_pointers[y][x*4+2];
-				t->data[ 4*(y*t->dim[0]+x)+3 ] = row_pointers[y][x*4+3];
+				(*data)[ 4*(y*dim[0]+x)+0 ] = row_pointers[y][x*4+0];
+				(*data)[ 4*(y*dim[0]+x)+1 ] = row_pointers[y][x*4+1];
+				(*data)[ 4*(y*dim[0]+x)+2 ] = row_pointers[y][x*4+2];
+				(*data)[ 4*(y*dim[0]+x)+3 ] = row_pointers[y][x*4+3];
 			}
 		}
 	}
 	
-	for ( unsigned int y=0; y<t->dim[1]; y++ )
+	for ( unsigned int y=0; y<dim[1]; y++ )
 		free( row_pointers[y] );
 	free( row_pointers );
-	
-	return t;
 }

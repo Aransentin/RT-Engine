@@ -1,6 +1,9 @@
-#include "error_cl.h"
+#include "error.h"
 
+#include <stdlib.h>
 #include <stdio.h>
+#include "glcorearb.h"
+#include <GLFW/glfw3.h>
 
 #define N_ERRORS 47
 static char error_strings[N_ERRORS][64] =
@@ -104,6 +107,19 @@ static cl_int error_nums[N_ERRORS] =
 	-62,
 	-63
 };
+
+void error_die( const char * message )
+{
+	printf( "Error: %s\n", message );
+	exit( 1 );
+}
+
+void error_GL( void )
+{
+	GLenum error = glGetError();
+	if ( error != GL_NO_ERROR )
+		printf( "Error: OpenGL error %i\n", error );
+}
 
 void error_cl( int line, cl_int err )
 {

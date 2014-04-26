@@ -1,27 +1,20 @@
 #pragma once
 
 typedef struct object_struct Object;
-typedef struct object_struct_gpu ObjectGPU;
 
 #include "mesh.h"
-#include <CL/cl.h>
-#include <CL/cl_gl.h>
 
 struct object_struct
 {
+	float mat[16];
+	float bb[8];
 	Mesh * mesh;
-	unsigned int buffer_offset;
+	
+	/*Vertex data*/
+	float * v;
+	unsigned int vo;
+	
+	/*Flags*/
 	char dynamic;
-	char padding[3];
+	char dirty;
 };
-
-struct object_struct_gpu
-{
-	cl_float4 bba;
-	cl_float4 bbb;
-	cl_int nTri;
-	cl_int offset;
-	cl_int2 padding;
-};
-
-Object * object_new( void );

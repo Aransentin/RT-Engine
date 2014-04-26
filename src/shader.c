@@ -1,8 +1,9 @@
-#include "shader_gl.h"
+#include "shader.h"
 
 #include <stdlib.h>
 #include <stdio.h>
 #include "file.h"
+#include "error.h"
 
 static void shader_test_compile( GLuint vs, GLuint fs )
 {
@@ -45,8 +46,11 @@ Shader * shader_init( void )
 	Shader * s = calloc( 1, sizeof(Shader) );
 	
 	/*Read shader source files*/
-	char * vs = readFile( "assets/vert.glsl" );
-	char * fs = readFile( "assets/frag.glsl" );
+	char * vs = readFile( "shaders/vert.glsl" );
+	char * fs = readFile( "shaders/frag.glsl" );
+	
+	if ( vs == NULL || fs == NULL )
+		error_die( "Shader files not found" );
 	
 	/*Compile shaders*/
 	s->shader[0] = glCreateShader( GL_VERTEX_SHADER );

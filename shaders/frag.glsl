@@ -8,5 +8,5 @@ out vec4 fCol;
 
 void main()
 {
-	fCol = vec4( texture( mtex, oUV ).rgb, 1.0 );
+	fCol = vec4( texture( mtex, oUV ).rgb, 0.5 );
 }
